@@ -10,3 +10,11 @@ openai
 pypdf
 loguru
 docx2txt
+streamlit
+langchain
+tiktoken
+PyPDF2
+python-docx
+python-pptx
+faiss-cpu
+sentence_transformers
