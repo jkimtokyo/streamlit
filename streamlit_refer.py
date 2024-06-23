@@ -6,7 +6,6 @@ from io import BytesIO
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
 
-from langchain.document_loaders import PyPDFLoader
 from langchain.document_loaders import Docx2txtLoader
 from langchain.document_loaders import UnstructuredPowerPointLoader
 
@@ -18,6 +17,9 @@ from langchain.vectorstores import FAISS
 
 from langchain.callbacks import get_openai_callback
 from langchain.memory import StreamlitChatMessageHistory
+
+from PyPDF2 import PdfReader
+from langchain.schema import Document
 
 def main():
     st.set_page_config(
@@ -122,20 +124,23 @@ def get_text(docs):
             file_name = doc.name
             
             if '.pdf' in file_name.lower():
-                pdf_file = BytesIO(file_content)
-                loader = PyPDFLoader(pdf_file)
-                documents = loader.load_and_split()
+                pdf_reader = PdfReader(BytesIO(file_content))
+                text = ""
+                for page in pdf_reader.pages:
+                    text += page.extract_text()
+                doc_list.append(Document(page_content=text, metadata={"source": file_name}))
             elif '.docx' in file_name.lower():
                 loader = Docx2txtLoader(BytesIO(file_content))
-                documents = loader.load_and_split()
+                documents = loader.load()
+                doc_list.extend(documents)
             elif '.pptx' in file_name.lower():
                 loader = UnstructuredPowerPointLoader(BytesIO(file_content))
-                documents = loader.load_and_split()
+                documents = loader.load()
+                doc_list.extend(documents)
             else:
                 st.error(f"Unsupported file type: {file_name}")
                 continue
 
-            doc_list.extend(documents)
             logger.info(f"Processed {file_name}")
         except Exception as e:
             st.error(f"Error processing {doc.name}: {str(e)}")
